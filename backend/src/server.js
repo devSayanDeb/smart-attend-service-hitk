@@ -1,123 +1,87 @@
 const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
 const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const compression = require('compression');
-const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
 
-// Import database connection
-const connectDB = require('./config/database');
+// Load environment variables
+dotenv.config();
 
-// Import middleware
-const errorHandler = require('./middleware/errorHandler');
-const notFound = require('./middleware/notFound');
-
-// Import routes
-const authRoutes = require('./routes/auth');
-const sessionRoutes = require('./routes/sessions');
-const attendanceRoutes = require('./routes/attendance');
-const userRoutes = require('./routes/users');
-
-// Initialize Express app
 const app = express();
-const server = http.createServer(app);
 
-// Initialize Socket.IO
-const io = socketIo(server, {
-  cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
-});
+// CORS Configuration - CRITICAL FIX
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow specific origins or all origins for testing
+    const allowedOrigins = [
+      'https://smart-attendance-hitk.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:3000'
+    ];
+    
+    // Allow requests with no origin (mobile apps, postman, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
 
-// Connect to database
-connectDB();
+// Apply CORS middleware
+app.use(cors(corsOptions));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000, // 15 minutes
-  max: process.env.RATE_LIMIT_MAX_REQUESTS || 100, // Limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
-});
+// Body parsing middleware
+app.use(express.json());
 
-// Middleware
-app.use(helmet());
-app.use(compression());
-app.use(limiter);
-app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174"],
-  credentials: true
-}));
-app.use(morgan('combined'));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-
-// Make io accessible to our router
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
+// Root route for health check
+app.get('/', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Smart Attendance System Backend API',
+    status: 'running',
     version: '1.0.0'
   });
 });
 
-// API Routes
+// Import routes
+const authRoutes = require('./src/routes/auth');
+const sessionRoutes = require('./src/routes/sessions');
+const attendanceRoutes = require('./src/routes/attendance');
+
+// Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/attendance', attendanceRoutes);
-app.use('/api/users', userRoutes);
 
-// Socket.IO connection handling
-io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
-
-  // Join session room
-  socket.on('join-session', (sessionId) => {
-    socket.join(`session-${sessionId}`);
-    console.log(`Socket ${socket.id} joined session ${sessionId}`);
-  });
-
-  // Leave session room
-  socket.on('leave-session', (sessionId) => {
-    socket.leave(`session-${sessionId}`);
-    console.log(`Socket ${socket.id} left session ${sessionId}`);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: `Not found - ${req.originalUrl}` 
   });
 });
 
 // Error handling middleware
-app.use(notFound);
-app.use(errorHandler);
-
-// Start server
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`\n🚀 Smart Attendance Service Backend`);
-  console.log(`📡 Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`⚡ Socket.IO enabled\n`);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  server.close(() => {
-    console.log('Process terminated');
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ 
+    success: false, 
+    message: 'Internal server error' 
   });
 });
 
-module.exports = { app, io };
+// Database connection
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('✅ MongoDB Atlas connected'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📡 CORS enabled for: ${process.env.CORS_ORIGIN || 'all origins'}`);
+});
