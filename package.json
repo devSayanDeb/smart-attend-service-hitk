@@ -1,0 +1,73 @@
+{
+  "name": "smart-attend-service-hitk",
+  "version": "1.0.0",
+  "description": "A robust online smart attendance management platform for educational institutions with Bluetooth beacon technology, real-time monitoring, and anti-proxy security features",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "android-beacon"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:android": "cd android-beacon && npm run android",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && npm test",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint",
+    "install:all": "npm install && npm run install:frontend && npm run install:backend && npm run install:android",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && npm install",
+    "install:android": "cd android-beacon && npm install",
+    "clean": "npm run clean:frontend && npm run clean:backend",
+    "clean:frontend": "cd frontend && rm -rf node_modules build",
+    "clean:backend": "cd backend && rm -rf node_modules dist",
+    "setup": "npm run install:all && npm run setup:env",
+    "setup:env": "echo 'Setting up environment files...' && cp backend/.env.example backend/.env || echo '.env files need manual configuration'"
+  },
+  "keywords": [
+    "attendance",
+    "bluetooth",
+    "beacon",
+    "education",
+    "react",
+    "nodejs",
+    "mongodb",
+    "real-time",
+    "otp",
+    "security",
+    "hitk",
+    "smart-attendance"
+  ],
+  "author": {
+    "name": "Sayan Deb",
+    "email": "contact@example.com",
+    "url": "https://github.com/devSayanDeb"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devSayanDeb/smart-attend-service-hitk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devSayanDeb/smart-attend-service-hitk/issues"
+  },
+  "homepage": "https://github.com/devSayanDeb/smart-attend-service-hitk#readme",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.57.0",
+    "prettier": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
