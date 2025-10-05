@@ -47,10 +47,10 @@ app.get('/', (req, res) => {
   });
 });
 
-// Import routes
-const authRoutes = require('./src/routes/auth');
-const sessionRoutes = require('./src/routes/sessions');
-const attendanceRoutes = require('./src/routes/attendance');
+// Import routes with CORRECT paths (adjust these to match your actual file structure)
+const authRoutes = require('./routes/auth');
+const sessionRoutes = require('./routes/sessions');
+const attendanceRoutes = require('./routes/attendance');
 
 // Use routes
 app.use('/api/auth', authRoutes);
