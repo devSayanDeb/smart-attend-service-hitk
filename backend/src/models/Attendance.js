@@ -9,7 +9,7 @@ const attendanceSchema = new mongoose.Schema({
   session: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Session',
-    required: true
+    required: false  // <- Now it's optional
   },
   status: {
     type: String,
