@@ -9,7 +9,7 @@ const api = axios.create({
   },
 });
 
-// Add token to requests
+// Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -18,14 +18,13 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Auth services
+export { api };
+
 export const authService = {
-  login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
-  getProfile: () => api.get('/users/profile'),
+  login: (userData) => api.post('/auth/login', userData),
 };
 
-// Session services
 export const sessionService = {
   getSessions: () => api.get('/sessions'),
   createSession: (sessionData) => api.post('/sessions', sessionData),
@@ -33,12 +32,9 @@ export const sessionService = {
   endSession: (sessionId) => api.post(`/sessions/${sessionId}/end`),
 };
 
-// Add this to attendanceService object:
 export const attendanceService = {
   requestOTP: (data) => api.post('/attendance/request-otp', data),
   verifyOTP: (data) => api.post('/attendance/verify', data),
   getHistory: () => api.get('/attendance/history'),
-  getSessionAttendance: (sessionId) => api.get(`/attendance/session/${sessionId}`) // Add this line
+  getSessionAttendance: (sessionId) => api.get(`/attendance/session/${sessionId}`)
 };
-
-export default api;
