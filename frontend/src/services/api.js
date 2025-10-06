@@ -1,9 +1,13 @@
 import axios from 'axios';
 
+// Production-ready API configuration
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? 'https://smart-attend-backend-production.up.railway.app/api'
   : 'http://localhost:5000/api';
-  
+
+console.log('🌐 API Base URL:', API_BASE_URL);
+console.log('🔧 Environment:', process.env.NODE_ENV);
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
