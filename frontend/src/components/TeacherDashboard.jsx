@@ -68,19 +68,36 @@ const TeacherDashboard = () => {
     }
   };
 
+  // FIXED viewAttendance function
   const viewAttendance = async (sessionId) => {
     try {
       console.log('📊 Fetching attendance for session:', sessionId);
-
       const response = await attendanceService.getSessionAttendance(sessionId);
-      console.log('📊 Loaded attendance:', response.data.stats);
-
-      const { session, attendance, stats } = response.data;
-
-      // Just show the modal - no alert needed
-      setSelectedSessionData({ session, attendance, stats });
-      setShowAttendanceModal(true);
-
+      console.log('📊 Loaded attendance response:', response.data);
+      
+      // FIXED: Handle the response structure properly
+      const attendanceData = response.data.data || response.data;
+      
+      console.log('📊 Processed attendance data:', attendanceData);
+      
+      if (attendanceData && attendanceData.session) {
+        setSelectedSessionData({
+          session: attendanceData.session,
+          attendance: attendanceData.attendance || [],
+          stats: attendanceData.stats || { total: 0, present: 0, late: 0, absent: 0 }
+        });
+        setShowAttendanceModal(true);
+      } else {
+        console.log('❌ Invalid attendance data structure');
+        // Create default structure if data is missing
+        setSelectedSessionData({
+          session: { title: 'Unknown Session', subject: 'N/A', room: 'N/A' },
+          attendance: [],
+          stats: { total: 0, present: 0, late: 0, absent: 0 }
+        });
+        setShowAttendanceModal(true);
+        alert('No attendance data found for this session.');
+      }
     } catch (error) {
       console.error('❌ Error loading attendance:', error);
       alert('Error loading attendance: ' + (error.response?.data?.message || error.message));
@@ -266,7 +283,7 @@ const TeacherDashboard = () => {
           </div>
         </div>
 
-        {/* Attendance Modal - MOVED HERE INSIDE THE RETURN STATEMENT */}
+        {/* FIXED: Attendance Modal */}
         {showAttendanceModal && selectedSessionData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
@@ -285,27 +302,27 @@ const TeacherDashboard = () => {
 
               {/* Session Info */}
               <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                <h3 className="font-semibold text-lg">{selectedSessionData.session?.title}</h3>
-                <p className="text-gray-600">Subject: {selectedSessionData.session?.subject}</p>
-                <p className="text-gray-600">Room: {selectedSessionData.session?.room}</p>
+                <h3 className="font-semibold text-lg">{selectedSessionData.session?.title || 'Unknown Session'}</h3>
+                <p className="text-gray-600">Subject: {selectedSessionData.session?.subject || 'N/A'}</p>
+                <p className="text-gray-600">Room: {selectedSessionData.session?.room || 'N/A'}</p>
               </div>
 
-              {/* Statistics */}
+              {/* Statistics - FIXED: Safe access with fallbacks */}
               <div className="grid grid-cols-4 gap-4 mb-6">
                 <div className="bg-blue-100 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{selectedSessionData.stats.total}</div>
+                  <div className="text-2xl font-bold text-blue-600">{selectedSessionData.stats?.total || 0}</div>
                   <div className="text-sm text-blue-800">Total</div>
                 </div>
                 <div className="bg-green-100 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-green-600">{selectedSessionData.stats.present}</div>
+                  <div className="text-2xl font-bold text-green-600">{selectedSessionData.stats?.present || 0}</div>
                   <div className="text-sm text-green-800">Present</div>
                 </div>
                 <div className="bg-yellow-100 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-yellow-600">{selectedSessionData.stats.late}</div>
+                  <div className="text-2xl font-bold text-yellow-600">{selectedSessionData.stats?.late || 0}</div>
                   <div className="text-sm text-yellow-800">Late</div>
                 </div>
                 <div className="bg-red-100 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-red-600">{selectedSessionData.stats.absent}</div>
+                  <div className="text-2xl font-bold text-red-600">{selectedSessionData.stats?.absent || 0}</div>
                   <div className="text-sm text-red-800">Absent</div>
                 </div>
               </div>
@@ -320,6 +337,7 @@ const TeacherDashboard = () => {
                         <th className="border border-gray-300 px-4 py-2 text-left">Roll Number</th>
                         <th className="border border-gray-300 px-4 py-2 text-left">Status</th>
                         <th className="border border-gray-300 px-4 py-2 text-left">Time</th>
+                        <th className="border border-gray-300 px-4 py-2 text-left">Device ID</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -339,6 +357,14 @@ const TeacherDashboard = () => {
                             <div>{record.markedTime}</div>
                             <div className="text-xs text-gray-500">{new Date(record.markedAt).toLocaleDateString()}</div>
                           </td>
+                          <td className="border border-gray-300 px-4 py-2">
+                            <code className="text-xs bg-gray-100 px-1 rounded">
+                              {record.deviceFingerprint?.deviceId ? 
+                                record.deviceFingerprint.deviceId.substring(0, 8) + '...' : 
+                                'N/A'
+                              }
+                            </code>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -346,7 +372,8 @@ const TeacherDashboard = () => {
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
-                  No attendance records found for this session.
+                  <p className="text-lg">📭 No attendance records found</p>
+                  <p className="text-sm">Students haven't marked attendance for this session yet.</p>
                 </div>
               )}
 

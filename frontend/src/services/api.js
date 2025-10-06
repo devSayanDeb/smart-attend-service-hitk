@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://smart-attend-backend-production.up.railway.app/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -36,5 +36,5 @@ export const attendanceService = {
   requestOTP: (data) => api.post('/attendance/request-otp', data),
   verifyOTP: (data) => api.post('/attendance/verify', data),
   getHistory: () => api.get('/attendance/history'),
-  getSessionAttendance: (sessionId) => api.get(`/attendance/session/${sessionId}`)
+  getSessionAttendance: (sessionId) => api.get(`/attendance/session/${sessionId}`) 
 };
