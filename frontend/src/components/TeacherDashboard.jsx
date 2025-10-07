@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { sessionService, attendanceService } from '../services/api';
 import useAuthStore from '../store/authStore';
+import './TeacherDashboard.css'; // Add this CSS import
 
 const TeacherDashboard = () => {
   const { user } = useAuthStore();
   
-  // Existing state
   const [sessions, setSessions] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [activeSession, setActiveSession] = useState(null);
@@ -20,14 +20,11 @@ const TeacherDashboard = () => {
     duration: 60
   });
 
-  // NEW: Mobile app integration state
   const [mobileBeaconActive, setMobileBeaconActive] = useState(false);
   const [mobileAuthData, setMobileAuthData] = useState(null);
   const [teacher, setTeacher] = useState(user);
 
-  // NEW: Mobile app authentication detection
   useEffect(() => {
-    // Check for mobile app authentication
     const urlParams = new URLSearchParams(window.location.search);
     const authData = urlParams.get('auth');
     
@@ -38,9 +35,7 @@ const TeacherDashboard = () => {
         
         console.log('📱 Mobile auth data received:', { teacherId, email, name });
         
-        // Verify token is recent (within 1 hour)
         if (Date.now() - timestamp < 3600000) {
-          // Set mobile authentication data
           setMobileAuthData({
             id: teacherId,
             email,
@@ -51,7 +46,6 @@ const TeacherDashboard = () => {
           
           setMobileBeaconActive(true);
           
-          // Auto-login if not already logged in
           if (!teacher || !teacher.id) {
             const teacherData = {
               id: teacherId,
@@ -62,16 +56,12 @@ const TeacherDashboard = () => {
             };
             
             setTeacher(teacherData);
-            
-            // Update localStorage if you use it
             localStorage.setItem('teacherToken', token);
             localStorage.setItem('teacherData', JSON.stringify(teacherData));
           }
           
-          // Show success message
           alert('🎉 Successfully connected from mobile app!\nBeacon is active and ready.');
           
-          // Clear URL parameters for clean URL
           const newUrl = window.location.pathname;
           window.history.replaceState({}, document.title, newUrl);
         } else {
@@ -84,7 +74,6 @@ const TeacherDashboard = () => {
     }
   }, [teacher]);
 
-  // Existing functions
   const loadSessions = async () => {
     try {
       const response = await sessionService.getSessions();
@@ -145,12 +134,8 @@ const TeacherDashboard = () => {
 
   const viewAttendance = async (sessionId) => {
     try {
-      console.log('📊 Fetching attendance for session:', sessionId);
       const response = await attendanceService.getSessionAttendance(sessionId);
-      console.log('📊 Loaded attendance response:', response.data);
-      
       const attendanceData = response.data.data || response.data;
-      console.log('📊 Processed attendance data:', attendanceData);
       
       if (attendanceData && attendanceData.session) {
         setSelectedSessionData({
@@ -164,27 +149,9 @@ const TeacherDashboard = () => {
           }
         });
         setShowAttendanceModal(true);
-      } else {
-        console.log('❌ Invalid attendance data structure');
-        setSelectedSessionData({
-          session: {
-            title: 'Unknown Session',
-            subject: 'N/A',
-            room: 'N/A'
-          },
-          attendance: [],
-          stats: {
-            total: 0,
-            present: 0,
-            late: 0,
-            absent: 0
-          }
-        });
-        setShowAttendanceModal(true);
-        alert('No attendance data found for this session.');
       }
     } catch (error) {
-      console.error('❌ Error loading attendance:', error);
+      console.error('Error loading attendance:', error);
       alert('Error loading attendance: ' + (error.response?.data?.message || error.message));
     }
   };
@@ -196,29 +163,20 @@ const TeacherDashboard = () => {
   return (
     <div className="teacher-dashboard">
       <div className="dashboard-header">
-        <h1>Teacher Dashboard</h1>
+        <h1 className="dashboard-title">
+          <span className="title-icon">👩‍🏫</span>
+          Teacher Dashboard
+        </h1>
         
-        {/* NEW: Mobile Beacon Status */}
         {mobileBeaconActive && (
-          <div style={{
-            backgroundColor: '#e8f5e8',
-            border: '2px solid #4caf50',
-            borderRadius: '8px',
-            padding: '15px',
-            margin: '10px 0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}>
-            <div style={{ fontSize: '24px' }}>📡</div>
-            <div>
-              <h4 style={{ margin: '0', color: '#2e7d32' }}>
-                Mobile Beacon Active
-              </h4>
-              <p style={{ margin: '5px 0 0 0', color: '#4caf50' }}>
+          <div className="mobile-beacon-status">
+            <div className="beacon-icon">📡</div>
+            <div className="beacon-info">
+              <h4>Mobile Beacon Active</h4>
+              <p>
                 Connected from mobile app • Students can detect your presence
                 {mobileAuthData && (
-                  <span> • Teacher: {mobileAuthData.name}</span>
+                  <span> • Teacher: <strong>{mobileAuthData.name}</strong></span>
                 )}
               </p>
             </div>
@@ -228,21 +186,29 @@ const TeacherDashboard = () => {
         {!showCreateForm && (
           <button
             onClick={() => setShowCreateForm(true)}
-            className="btn btn-primary"
+            className="create-session-btn"
           >
             ➕ Create New Session
           </button>
         )}
       </div>
 
-      {/* Enhanced Create Session Form */}
       {showCreateForm && (
         <div className="create-session-form">
-          <h3>Create New Attendance Session</h3>
-          <form onSubmit={createSession}>
-            <div className="form-row">
+          <div className="form-header">
+            <h3>📝 Create New Attendance Session</h3>
+            <button 
+              className="close-form-btn"
+              onClick={() => setShowCreateForm(false)}
+            >
+              ✕
+            </button>
+          </div>
+          
+          <form onSubmit={createSession} className="session-form">
+            <div className="form-grid">
               <div className="form-group">
-                <label>Session Title:</label>
+                <label>📚 Session Title:</label>
                 <input
                   type="text"
                   value={newSession.title}
@@ -253,7 +219,7 @@ const TeacherDashboard = () => {
               </div>
               
               <div className="form-group">
-                <label>Subject:</label>
+                <label>📖 Subject:</label>
                 <select
                   value={newSession.subject}
                   onChange={(e) => setNewSession({...newSession, subject: e.target.value})}
@@ -270,11 +236,9 @@ const TeacherDashboard = () => {
                   <option value="Geography">Geography</option>
                 </select>
               </div>
-            </div>
 
-            <div className="form-row">
               <div className="form-group">
-                <label>Course/Class:</label>
+                <label>🎓 Course/Class:</label>
                 <select
                   value={newSession.course}
                   onChange={(e) => setNewSession({...newSession, course: e.target.value})}
@@ -288,13 +252,11 @@ const TeacherDashboard = () => {
                   <option value="BSc 1st Year">BSc 1st Year</option>
                   <option value="BSc 2nd Year">BSc 2nd Year</option>
                   <option value="BSc 3rd Year">BSc 3rd Year</option>
-                  <option value="MSc 1st Year">MSc 1st Year</option>
-                  <option value="MSc 2nd Year">MSc 2nd Year</option>
                 </select>
               </div>
               
               <div className="form-group">
-                <label>Room:</label>
+                <label>🏫 Room:</label>
                 <input
                   type="text"
                   value={newSession.room}
@@ -303,11 +265,9 @@ const TeacherDashboard = () => {
                   required
                 />
               </div>
-            </div>
 
-            <div className="form-row">
               <div className="form-group">
-                <label>Duration (minutes):</label>
+                <label>⏱️ Duration:</label>
                 <select
                   value={newSession.duration}
                   onChange={(e) => setNewSession({...newSession, duration: parseInt(e.target.value)})}
@@ -321,112 +281,119 @@ const TeacherDashboard = () => {
               </div>
               
               <div className="form-group">
-                <label>Teacher:</label>
+                <label>👨‍🏫 Teacher:</label>
                 <input
                   type="text"
                   value={mobileAuthData?.name || teacher?.name || user?.name || ''}
                   disabled
-                  style={{ backgroundColor: '#f5f5f5' }}
+                  className="disabled-input"
                 />
               </div>
             </div>
 
             <div className="form-actions">
-              <button type="submit" className="btn btn-success">
-                Create Session
+              <button type="submit" className="submit-btn">
+                ✅ Create Session
               </button>
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
-                className="btn btn-secondary"
+                className="cancel-btn"
               >
-                Cancel
+                ❌ Cancel
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Sessions List */}
-      <div className="sessions-list">
-        <h3>Your Sessions ({sessions.length})</h3>
+      <div className="sessions-section">
+        <h3 className="section-title">
+          📊 Your Sessions ({sessions.length})
+        </h3>
+        
         {sessions.length > 0 ? (
-          sessions.map(session => (
-            <div key={session._id} className="session-card">
-              <div className="session-info">
-                <h4>{session.title}</h4>
-                <p><strong>Subject:</strong> {session.subject}</p>
-                <p><strong>Course:</strong> {session.course}</p>
-                <p><strong>Room:</strong> {session.room}</p>
-                <p><strong>Duration:</strong> {session.duration} minutes</p>
-                <p><strong>Status:</strong> 
-                  <span className={`status ${session.status}`}>
+          <div className="sessions-grid">
+            {sessions.map(session => (
+              <div key={session._id} className="session-card">
+                <div className="session-header">
+                  <h4>{session.title}</h4>
+                  <span className={`status-badge ${session.status}`}>
                     {session.status}
                   </span>
-                </p>
-              </div>
-              <div className="session-actions">
-                {session.status === 'scheduled' && (
+                </div>
+                
+                <div className="session-details">
+                  <p><strong>📖 Subject:</strong> {session.subject}</p>
+                  <p><strong>🎓 Course:</strong> {session.course}</p>
+                  <p><strong>🏫 Room:</strong> {session.room}</p>
+                  <p><strong>⏱️ Duration:</strong> {session.duration} minutes</p>
+                </div>
+                
+                <div className="session-actions">
+                  {session.status === 'scheduled' && (
+                    <button
+                      onClick={() => startSession(session._id)}
+                      className="action-btn start-btn"
+                    >
+                      ▶️ Start
+                    </button>
+                  )}
+                  {session.status === 'active' && (
+                    <button
+                      onClick={() => endSession(session._id)}
+                      className="action-btn end-btn"
+                    >
+                      ⏹️ End
+                    </button>
+                  )}
                   <button
-                    onClick={() => startSession(session._id)}
-                    className="btn btn-success btn-sm"
+                    onClick={() => viewAttendance(session._id)}
+                    className="action-btn view-btn"
                   >
-                    Start Session
+                    👥 Attendance
                   </button>
-                )}
-                {session.status === 'active' && (
-                  <button
-                    onClick={() => endSession(session._id)}
-                    className="btn btn-danger btn-sm"
-                  >
-                    End Session
-                  </button>
-                )}
-                <button
-                  onClick={() => viewAttendance(session._id)}
-                  className="btn btn-info btn-sm"
-                >
-                  View Attendance
-                </button>
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         ) : (
           <div className="no-sessions">
-            <p>No sessions yet. Create your first session to get started!</p>
+            <div className="no-sessions-icon">📋</div>
+            <h4>No sessions yet</h4>
+            <p>Create your first session to get started!</p>
           </div>
         )}
       </div>
 
-      {/* Attendance Modal */}
       {showAttendanceModal && selectedSessionData && (
         <div className="modal-overlay" onClick={() => setShowAttendanceModal(false)}>
-          <div className="modal-content attendance-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="attendance-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Attendance Details</h3>
+              <h3>👥 Attendance Details</h3>
               <button 
-                className="close-btn"
+                className="close-modal-btn"
                 onClick={() => setShowAttendanceModal(false)}
               >
-                ×
+                ✕
               </button>
             </div>
             
-            <div className="modal-body">
-              <div className="session-details">
-                <p><strong>Subject:</strong> {selectedSessionData.session?.subject || 'N/A'}</p>
-                <p><strong>Room:</strong> {selectedSessionData.session?.room || 'N/A'}</p>
+            <div className="modal-content">
+              <div className="session-info">
+                <p><strong>📖 Subject:</strong> {selectedSessionData.session?.subject || 'N/A'}</p>
+                <p><strong>🏫 Room:</strong> {selectedSessionData.session?.room || 'N/A'}</p>
               </div>
               
-              <div className="attendance-table">
-                <table>
+              <div className="attendance-table-container">
+                <table className="attendance-table">
                   <thead>
                     <tr>
-                      <th>Student Name</th>
-                      <th>Roll Number</th>
-                      <th>Status</th>
-                      <th>Time</th>
-                      <th>Device ID</th>
+                      <th>👤 Student</th>
+                      <th>🔢 Roll No.</th>
+                      <th>✅ Status</th>
+                      <th>⏰ Time</th>
+                      <th>📱 Device</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -435,12 +402,14 @@ const TeacherDashboard = () => {
                         <tr key={index}>
                           <td>{record.student?.name || 'Unknown'}</td>
                           <td>{record.student?.rollNumber || 'N/A'}</td>
-                          <td>{record.status.toUpperCase()}</td>
                           <td>
-                            {record.markedTime} {new Date(record.markedAt).toLocaleDateString()}
+                            <span className={`status-tag ${record.status}`}>
+                              {record.status.toUpperCase()}
+                            </span>
                           </td>
+                          <td>{new Date(record.markedAt).toLocaleString()}</td>
                           <td>
-                            <code>
+                            <code className="device-id">
                               {record.deviceFingerprint?.deviceId 
                                 ? record.deviceFingerprint.deviceId.substring(0, 8) + '...'
                                 : 'N/A'
@@ -451,10 +420,10 @@ const TeacherDashboard = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="5" className="no-data">
+                        <td colSpan="5" className="no-attendance">
                           📭 No attendance records found
                           <br />
-                          <small>Students haven't marked attendance for this session yet.</small>
+                          <small>Students haven't marked attendance yet.</small>
                         </td>
                       </tr>
                     )}
