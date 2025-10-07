@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { sessionService, attendanceService } from '../services/api';
 import useAuthStore from '../store/authStore';
-import './TeacherDashboard.css'; // Add this CSS import
+import './TeacherDashboard.css';
 
 const TeacherDashboard = () => {
-  const { user } = useAuthStore();
+  const { user, logout: authLogout } = useAuthStore(); // Get logout from auth store
   
   const [sessions, setSessions] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -23,6 +23,33 @@ const TeacherDashboard = () => {
   const [mobileBeaconActive, setMobileBeaconActive] = useState(false);
   const [mobileAuthData, setMobileAuthData] = useState(null);
   const [teacher, setTeacher] = useState(user);
+
+  // NEW: Logout function
+  const handleLogout = () => {
+    const confirmLogout = window.confirm(
+      '🚪 Are you sure you want to logout?\n\nThis will:\n• End your current session\n• Clear authentication data\n• Return you to login page'
+    );
+    
+    if (confirmLogout) {
+      // Clear local storage
+      localStorage.removeItem('teacherToken');
+      localStorage.removeItem('teacherData');
+      
+      // Clear state
+      setTeacher(null);
+      setMobileAuthData(null);
+      setMobileBeaconActive(false);
+      setSessions([]);
+      
+      // Call auth store logout if available
+      if (authLogout) {
+        authLogout();
+      }
+      
+      // Redirect to login or home page
+      window.location.href = '/login'; // Adjust path as needed
+    }
+  };
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -163,35 +190,58 @@ const TeacherDashboard = () => {
   return (
     <div className="teacher-dashboard">
       <div className="dashboard-header">
-        <h1 className="dashboard-title">
-          <span className="title-icon">👩‍🏫</span>
-          Teacher Dashboard
-        </h1>
-        
-        {mobileBeaconActive && (
-          <div className="mobile-beacon-status">
-            <div className="beacon-icon">📡</div>
-            <div className="beacon-info">
-              <h4>Mobile Beacon Active</h4>
-              <p>
-                Connected from mobile app • Students can detect your presence
-                {mobileAuthData && (
-                  <span> • Teacher: <strong>{mobileAuthData.name}</strong></span>
-                )}
-              </p>
-            </div>
+        <div className="header-left">
+          <h1 className="dashboard-title">
+            <span className="title-icon">👩‍🏫</span>
+            Teacher Dashboard
+          </h1>
+          
+          {/* Teacher Info */}
+          <div className="teacher-info">
+            <span className="teacher-name">
+              Welcome, <strong>{mobileAuthData?.name || teacher?.name || user?.name || 'Teacher'}</strong>
+            </span>
+            <span className="teacher-email">
+              {mobileAuthData?.email || teacher?.email || user?.email}
+            </span>
           </div>
-        )}
-
-        {!showCreateForm && (
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="create-session-btn"
+        </div>
+        
+        <div className="header-right">
+          {/* NEW: Logout Button */}
+          <button 
+            onClick={handleLogout}
+            className="logout-btn"
+            title="Logout from Teacher Dashboard"
           >
-            ➕ Create New Session
+            🚪 Logout
           </button>
-        )}
+          
+          {!showCreateForm && (
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="create-session-btn"
+            >
+              ➕ Create New Session
+            </button>
+          )}
+        </div>
       </div>
+      
+      {mobileBeaconActive && (
+        <div className="mobile-beacon-status">
+          <div className="beacon-icon">📡</div>
+          <div className="beacon-info">
+            <h4>Mobile Beacon Active</h4>
+            <p>
+              Connected from mobile app • Students can detect your presence
+              {mobileAuthData && (
+                <span> • Teacher: <strong>{mobileAuthData.name}</strong></span>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
 
       {showCreateForm && (
         <div className="create-session-form">
@@ -438,4 +488,4 @@ const TeacherDashboard = () => {
   );
 };
 
-export default TeacherDashboard; 
+export default TeacherDashboard;
